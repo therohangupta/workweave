@@ -51,6 +51,17 @@ def build() -> Path:
     out_json = settings.data_processed_dir / "engineer_metrics.json"
     write_json(out_json, metrics.to_dict(orient="records"))
     metrics.to_csv(settings.data_processed_dir / "engineer_metrics.csv", index=False)
+
+    dates = sorted(pr.get("createdAt", "")[:10] for pr in raw_prs if pr.get("createdAt"))
+    metadata = {
+        "total_prs": len(raw_prs),
+        "merged_prs": sum(1 for pr in raw_prs if pr.get("state") == "MERGED"),
+        "date_from": dates[0] if dates else "?",
+        "date_to": dates[-1] if dates else "?",
+        "days_covered": len(set(dates)),
+    }
+    write_json(settings.data_processed_dir / "metadata.json", metadata)
+
     return out_json
 
 

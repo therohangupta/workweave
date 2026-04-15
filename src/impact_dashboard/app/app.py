@@ -9,7 +9,7 @@ import streamlit as st
 
 ROOT = Path(__file__).resolve().parents[3]
 DATA_PATH = ROOT / "data" / "processed" / "engineer_metrics.json"
-RAW_PATH = ROOT / "data" / "raw" / "prs_raw.json"
+META_PATH = ROOT / "data" / "processed" / "metadata.json"
 
 # ---------------------------------------------------------------------------
 # Metric deep-dives: what / how / why for every single metric
@@ -199,19 +199,10 @@ def load_data() -> pd.DataFrame:
 
 @st.cache_data
 def load_metadata() -> dict:
-    if not RAW_PATH.exists():
+    if not META_PATH.exists():
         return {}
-    with RAW_PATH.open() as f:
-        raw = json.load(f)
-    dates = sorted(pr["createdAt"][:10] for pr in raw)
-    merged = sum(1 for pr in raw if pr.get("state") == "MERGED")
-    return {
-        "total_prs": len(raw),
-        "merged_prs": merged,
-        "date_from": dates[0] if dates else "?",
-        "date_to": dates[-1] if dates else "?",
-        "days_covered": len(set(dates)),
-    }
+    with META_PATH.open() as f:
+        return json.load(f)
 
 
 # ---------------------------------------------------------------------------
@@ -521,7 +512,7 @@ def tab_leaderboard(df: pd.DataFrame, top5: pd.DataFrame) -> None:
                 st.markdown(f"- Refactors: **{int(row['refactor_prs'])}**")
 
     st.markdown('<div class="section-title">Score Breakdown — How Each Engineer\'s Impact Stacks Up</div>', unsafe_allow_html=True)
-    st.plotly_chart(make_impact_chart(top5), use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(make_impact_chart(top5), width="stretch", config={"displayModeBar": False})
 
 
 # ---------------------------------------------------------------------------
@@ -627,7 +618,7 @@ def tab_data(df: pd.DataFrame, top5: pd.DataFrame) -> None:
             "team_score": "{:.3f}", "technical_score": "{:.3f}",
             "weighted_pr_output": "{:.1f}", "avg_cycle_time_hours": "{:.1f}",
         }),
-        use_container_width=True,
+        width="stretch",
     )
 
     st.markdown('<div class="section-title">All Engineers</div>', unsafe_allow_html=True)
@@ -637,7 +628,7 @@ def tab_data(df: pd.DataFrame, top5: pd.DataFrame) -> None:
     ]
     st.dataframe(
         df[all_cols].style.format({"impact_score": "{:.3f}", "weighted_pr_output": "{:.1f}"}),
-        use_container_width=True,
+        width="stretch",
         height=500,
     )
     st.caption("Every column header matches a metric explained in the Methodology tab.")
