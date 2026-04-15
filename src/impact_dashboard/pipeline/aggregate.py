@@ -40,6 +40,7 @@ def aggregate_engineer_metrics(prs: pd.DataFrame, reviews: pd.DataFrame) -> pd.D
                 "distinct_prs_reviewed",
                 "unblocks",
                 "review_response_time_hours",
+                "distinct_engineers_helped",
             ]
         )
     else:
@@ -55,19 +56,14 @@ def aggregate_engineer_metrics(prs: pd.DataFrame, reviews: pd.DataFrame) -> pd.D
             .rename(columns={"reviewer": "engineer"})
         )
 
-    review_with_author = reviews.merge(
-        prs[["pr_number", "author"]].rename(columns={"author": "pr_author"}),
-        on="pr_number",
-        how="left",
-    )
-    distinct_helped = (
-        review_with_author[review_with_author["reviewer"] != review_with_author["pr_author"]]
-        .groupby("reviewer", dropna=False)["pr_author"]
-        .nunique()
-        .reset_index()
-        .rename(columns={"reviewer": "engineer", "pr_author": "distinct_engineers_helped"})
-    )
-    team = team.merge(distinct_helped, on="engineer", how="left")
+        cross_reviews = reviews[reviews["reviewer"] != reviews["pr_author"]]
+        distinct_helped = (
+            cross_reviews.groupby("reviewer", dropna=False)["pr_author"]
+            .nunique()
+            .reset_index()
+            .rename(columns={"reviewer": "engineer", "pr_author": "distinct_engineers_helped"})
+        )
+        team = team.merge(distinct_helped, on="engineer", how="left")
 
     metrics = product.merge(technical, on="engineer", how="outer").merge(team, on="engineer", how="outer")
     metrics["distinct_engineers_helped"] = metrics["distinct_engineers_helped"].fillna(0)

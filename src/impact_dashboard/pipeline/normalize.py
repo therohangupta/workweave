@@ -4,6 +4,8 @@ from typing import Any
 
 import pandas as pd
 
+from ..github.client import is_bot
+
 
 def _safe_login(author_obj: dict[str, Any] | None) -> str:
     if not author_obj:
@@ -25,6 +27,10 @@ def normalize_prs(raw_prs: list[dict[str, Any]]) -> tuple[pd.DataFrame, pd.DataF
     comment_rows: list[dict[str, Any]] = []
 
     for pr in raw_prs:
+        author = _safe_login(pr.get("author"))
+        if is_bot(author):
+            continue
+
         pr_number = pr["number"]
         file_nodes = (pr.get("files") or {}).get("nodes") or []
         file_paths = [node["path"] for node in file_nodes if node and node.get("path")]
@@ -34,7 +40,7 @@ def normalize_prs(raw_prs: list[dict[str, Any]]) -> tuple[pd.DataFrame, pd.DataF
             {
                 "pr_number": pr_number,
                 "title": pr.get("title", ""),
-                "author": _safe_login(pr.get("author")),
+                "author": author,
                 "created_at": pr.get("createdAt"),
                 "merged_at": pr.get("mergedAt"),
                 "closed_at": pr.get("closedAt"),
@@ -52,10 +58,14 @@ def normalize_prs(raw_prs: list[dict[str, Any]]) -> tuple[pd.DataFrame, pd.DataF
         for review in (pr.get("reviews") or {}).get("nodes", []):
             if not review:
                 continue
+            reviewer = _safe_login(review.get("author"))
+            if is_bot(reviewer):
+                continue
             review_rows.append(
                 {
                     "pr_number": pr_number,
-                    "reviewer": _safe_login(review.get("author")),
+                    "pr_author": author,
+                    "reviewer": reviewer,
                     "review_state": review.get("state"),
                     "created_at": review.get("createdAt"),
                     "merged_at": pr.get("mergedAt"),
@@ -65,10 +75,13 @@ def normalize_prs(raw_prs: list[dict[str, Any]]) -> tuple[pd.DataFrame, pd.DataF
         for comment in (pr.get("comments") or {}).get("nodes", []):
             if not comment:
                 continue
+            commenter = _safe_login(comment.get("author"))
+            if is_bot(commenter):
+                continue
             comment_rows.append(
                 {
                     "pr_number": pr_number,
-                    "commenter": _safe_login(comment.get("author")),
+                    "commenter": commenter,
                     "created_at": comment.get("createdAt"),
                     "type": "general",
                 }

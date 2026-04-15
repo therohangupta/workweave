@@ -14,11 +14,6 @@ CORE_AREAS = (
 )
 
 
-def _contains_any(value: str, needles: tuple[str, ...]) -> bool:
-    lower = value.lower()
-    return any(n in lower for n in needles)
-
-
 def _has_core_path(paths: list[str]) -> bool:
     return any(any(path.startswith(area) for area in CORE_AREAS) for path in paths)
 
