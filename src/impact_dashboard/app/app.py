@@ -487,10 +487,8 @@ def render_metric_card_html(key: str) -> str:
 # ---------------------------------------------------------------------------
 
 def tab_leaderboard(df: pd.DataFrame, top5: pd.DataFrame) -> None:
-    cards_html = "".join(render_engineer_html(row, i) for i, (_, row) in enumerate(top5.iterrows(), 1))
-    st.markdown(cards_html, unsafe_allow_html=True)
-
-    for _, row in top5.iterrows():
+    for i, (_, row) in enumerate(top5.iterrows(), 1):
+        st.markdown(render_engineer_html(row, i), unsafe_allow_html=True)
         with st.expander(f"📋 Evidence for {row['engineer']}"):
             e1, e2, e3 = st.columns(3)
             with e1:
